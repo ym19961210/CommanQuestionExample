@@ -1,0 +1,38 @@
+1. why select can only listen 1024 fd?
+    According to the def of /usr/include/x86_64-linux-gnu/sys/select.h
+
+    /* The fd_set member is required to be an array of longs.  */
+    typedef long int __fd_mask;
+
+    /* Some versions of <linux/posix_types.h> define this macros.  */
+    #undef	__NFDBITS
+    /* It's easier to assume 8-bit bytes than to get CHAR_BIT.  */
+    #define __NFDBITS	(8 * (int) sizeof (__fd_mask))
+    #define	__FD_ELT(d)	((d) / __NFDBITS)
+    #define	__FD_MASK(d)	((__fd_mask) (1UL << ((d) % __NFDBITS)))
+
+    /* fd_set for select and pselect.  */
+    typedef struct
+    {
+        /* XPG4.2 requires this member name.  Otherwise avoid the name
+        from the global namespace.  */
+    #ifdef __USE_XOPEN
+        __fd_mask fds_bits[__FD_SETSIZE / __NFDBITS];
+    # define __FDS_BITS(set) ((set)->fds_bits)
+    #else
+        __fd_mask __fds_bits[__FD_SETSIZE / __NFDBITS];
+    # define __FDS_BITS(set) ((set)->__fds_bits)
+    #endif
+    } fd_set;
+
+    /* Maximum number of file descriptors in `fd_set'.  */
+    #define	FD_SETSIZE		__FD_SETSIZE
+
+    fd_set is passed into the select to set corresponding bit to reflect whether there is event happends.
+    And fd_set is actually array, which type is unsigned long int(bytes 8, 64bits), and array size is 1024/64 = 16.
+    So fd_set can only reflect 1024 fds' status.
+    To revise this value, linux keneral should be recomplined.
+
+    And poll and epoll are not restricted by this limit. Because they don't use bitmaps.
+    Poll use a link-list to save the fd status in kernel. And epoll use red-black trees.
+
