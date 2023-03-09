@@ -36,3 +36,15 @@
     And poll and epoll are not restricted by this limit. Because they don't use bitmaps.
     Poll use a link-list to save the fd status in kernel. And epoll use red-black trees.
 
+
+2. select poll epoll advantages and disadvantages.
+
+    Compare select and poll:
+        1. poll doesn't have limit of 1024.
+        2. poll still needs to do loop-query for all listen fds.
+        3. poll doesn't need to clear fdbits after dealing one event.
+        4. poll still need to copy the status of fds from kernel to users' space.
+
+    epoll have advantages of all.
+
+    But when fds' number is less than 1024 and every fd is active for most time, select and poll are recommend than epoll.
